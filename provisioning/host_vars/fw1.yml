@@ -1,0 +1,39 @@
+---
+resolv_nameservers:
+  - 10.0.0.252
+resolv_domain: vagrant
+pf_file_content: | 
+  ##macro
+  ################
+  external="em1"
+  internal="em2"
+  dmz="em3"
+  table <internal_nets> { $internal:network , $dmz:network, $external:network }
+  table <ftp-openbsd-org> { 129.128.5.191 }
+  table <internet-dns> { 10.0.0.252, 10.0.0.253 }
+  table <openvpn-vps> {10.0.0.10 }
+  ##global 
+  ################
+  set skip on lo
+  #em0 is for vagrant stuff
+  set skip on em0
+  match in all scrub (no-df)
+  ##nat rules
+  ################
+  match out on $external from any to any nat-to ($external) tagged ALLOWED_TO_OUTSIDE
+  ##fw rules
+  ################
+  pass in quick on $internal from $internal:network to ! <internal_nets> tag ALLOWED_TO_OUTSIDE
+  pass in quick on $internal from $internal:network to $dmz:network tag ALLOWED_TO_DMZ
+  pass in quick on $dmz inet proto tcp from $dmz:network to <ftp-openbsd-org> port 80 tag ALLOWED_TO_OUTSIDE
+  pass in quick on $dmz inet proto udp from $dmz:network to <internet-dns> port 53 tag ALLOWED_TO_OUTSIDE
+  pass in quick on $dmz inet proto icmp from $dmz:network to any icmp-type echoreq  tag ALLOWED_TO_OUTSIDE
+  pass in quick on $dmz inet proto udp from $dmz:network to <openvpn-vps> port 1193 tag ALLOWED_TO_OUTSIDE
+
+  #enforce policies for outbound interfaces
+  pass out quick on $external tagged ALLOWED_TO_OUTSIDE
+  pass out quick on $dmz tagged ALLOWED_TO_DMZ
+  # firewall is allowed to do all
+  pass out quick from self to any
+  # default policy
+  block all

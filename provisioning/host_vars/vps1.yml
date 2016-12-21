@@ -1,0 +1,42 @@
+---
+resolv_nameservers:
+  - 10.0.0.253
+resolv_domain: vagrant
+pf_file_content: |
+  ##macro
+  ################
+  main="em1"
+  table <ftp-openbsd-org> { 129.128.5.191 }
+  table <internet-dns> { 10.0.0.252, 10.0.0.253 }
+  table <openvpn-clients> {172.31.3.254 }
+  table <lan_openvpn_home_site> { 172.31.1.0/24}
+  table <lan_openvpn> { 172.31.6.0/24 }
+  
+  ##global
+  ################
+  set skip on lo
+  #em0 is for vagrant stuff
+  set skip on em0
+  match in all scrub (no-df)
+  
+  ##nat rules
+  ################
+  match out on $main from any to any nat-to ($main) tagged FROM_VPN
+  
+  ##fw rules
+  ################
+  block in quick from urpf-failed label uRPF
+  pass quick on tun+ from <lan_openvpn_home_site> to any tag FROM_VPN
+  pass quick on tun+ from <lan_openvpn> to any tag FROM_VPN
+
+  pass in quick on $main proto udp from <openvpn-clients> to $main:0 port 1193 
+  pass in quick on $main proto icmp from <openvpn-clients> to  $main:0 icmp-type echoreq 
+
+  #enforce policies for outbound interfaces
+  pass out quick on $main tagged FROM_VPN
+  
+  # firewall is allowed to do all
+  pass out quick from self to any
+  
+  # default policy
+  block all

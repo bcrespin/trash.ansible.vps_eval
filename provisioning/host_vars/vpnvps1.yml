@@ -1,6 +1,5 @@
 ---
-vyos_config:
-  - " set system gateway-address 10.0.0.252 "
 resolv_nameservers:
   - 10.0.0.252
 resolv_domain: vagrant
+

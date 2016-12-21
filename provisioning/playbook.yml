@@ -3,7 +3,7 @@
   tasks:
      - group_by: key=OS_{{ ansible_os_family }}
 
-- name: routers config
+- name: routers config (vyos)
   hosts: vyos_routers
   gather_facts: False
   connection: local
@@ -15,20 +15,40 @@
       password: vagrant
       transport: cli
   tasks:
-    - include: routers.yml
+    - include: vyos_routers.yml
 
-- hosts: OS_FreeBSD
+- name: FreeBSD common tasks
+  hosts: OS_FreeBSD
   gather_facts: False
   tasks:
     - pkgng: name=bash state=present
     - file: src=/usr/local/bin/bash dest=/bin/bash state=link owner=root group=wheel
   roles:
     - ansible_motd
+    - ansible-resolv
 
-- hosts: OS_OpenBSD
+- name: OpenBSD common tasks
+  hosts: OS_OpenBSD
   become: true
   gather_facts: False
   roles:
     - ansible_motd
+  tasks:
+    - name: generate pf.conf file
+      copy: content="{{ pf_file_content }}" dest=/etc/pf.conf mode=0600 owner=root group=wheel
+      when: pf_file_content is defined
+      register: result
 
+    - name: reload pf service
+      command: sh -c "/sbin/pfctl -n -f /etc/pf.conf && /sbin/pfctl -f /etc/pf.conf"
+      when: result.changed 
 
+- name: home clients stuff
+  hosts: home_clients
+  become: true
+  gather_facts: False
+  tasks:
+    - name: install required package (OpenBSD)  
+      openbsd_pkg: name={{ item }} state=present
+      with_items: [ 'lynx','wget','openvpn']
+      when: ansible_os_family  == 'OpenBSD' 

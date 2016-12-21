@@ -2,7 +2,7 @@
 - name: configure the remote device
   vyos_config:
     backup: yes
-    lines: "{{ vyos_config }}"
+    lines: "{{ vyos_router_config }}"
     provider: "{{ cli }}"
     save: yes
 #- name: backup and load from file

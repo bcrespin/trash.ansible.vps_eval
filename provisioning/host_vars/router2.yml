@@ -1,9 +1,13 @@
 ---
-vyos_config:
+vyos_router_config:
   - " set protocols static route 172.31.3.0/24 next-hop 10.0.0.251 distance '1' " 
   - " set nat source rule 100 outbound-interface 'eth0' "
   - " set nat source rule 100 source address '172.31.3.0/24' "
-  - " set nat source rule 100 source address '10.0.0.251/32' "
   - " set nat source rule 100 translation address masquerade "
+  - " set nat source rule 101 outbound-interface 'eth0' "
+  - " set nat source rule 101 source address '172.31.3.0/24' "
+  - " set nat source rule 101 translation address masquerade "
   - " set firewall state-policy established action 'accept' "
   - " set firewall state-policy related action 'accept' " 
+  - " set service dns forwarding listen-on eth1 "
+  - " set service dns forwarding dhcp eth0 "
