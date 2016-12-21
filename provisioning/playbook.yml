@@ -1,0 +1,34 @@
+---
+- hosts: all
+  tasks:
+     - group_by: key=OS_{{ ansible_os_family }}
+
+- name: routers config
+  hosts: vyos_routers
+  gather_facts: False
+  connection: local
+  vars:
+    cli:
+      host: "{{ ansible_ssh_host }}"
+      port: "{{ ansible_ssh_port }}"
+      username: vagrant
+      password: vagrant
+      transport: cli
+  tasks:
+    - include: routers.yml
+
+- hosts: OS_FreeBSD
+  gather_facts: False
+  tasks:
+    - pkgng: name=bash state=present
+    - file: src=/usr/local/bin/bash dest=/bin/bash state=link owner=root group=wheel
+  roles:
+    - ansible_motd
+
+- hosts: OS_OpenBSD
+  become: true
+  gather_facts: False
+  roles:
+    - ansible_motd
+
+

@@ -1,0 +1,3 @@
+---
+vyos_config:
+  - " set system gateway-address 10.0.0.252 "

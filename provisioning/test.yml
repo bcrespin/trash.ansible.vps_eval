@@ -1,0 +1,16 @@
+---
+- name: show router name 
+  hosts: routers
+  become: false
+  tasks:
+    - command: 'echo router name is {{ ansible_hostname }}'
+      register: echoed
+    - debug: var=echoed.stdout
+
+- name: show vps name
+  hosts: openbsd_vps
+  become: false
+  tasks:
+    - command: 'echo vps name is {{ ansible_hostname }}'
+      register: echoed
+    - debug: var=echoed.stdout
