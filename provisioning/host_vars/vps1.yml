@@ -9,9 +9,8 @@ pf_file_content: |
   table <ftp-openbsd-org> { 129.128.5.191 }
   table <internet-dns> { 10.0.0.252, 10.0.0.253 }
   table <openvpn-clients> {172.31.3.254 }
-  table <lan_openvpn_home_site> { 172.31.1.0/24}
-  table <lan_openvpn> { 172.31.6.0/24 }
-  
+  table <lan_openvpn_home_site> { 172.31.1.20, 172.31.5.100}
+  table <lan_openvpn_warrior> { 192.168.255.16/28 } 
   ##global
   ################
   set skip on lo
@@ -27,7 +26,7 @@ pf_file_content: |
   ################
   block in quick from urpf-failed label uRPF
   pass quick on tun+ from <lan_openvpn_home_site> to any tag FROM_VPN
-  pass quick on tun+ from <lan_openvpn> to any tag FROM_VPN
+  pass quick on tun+ from <lan_openvpn_warrior> to any tag FROM_VPN
 
   pass in quick on $main proto udp from <openvpn-clients> to $main:0 port 1193 
   pass in quick on $main proto icmp from <openvpn-clients> to  $main:0 icmp-type echoreq 
@@ -40,3 +39,36 @@ pf_file_content: |
   
   # default policy
   block all
+
+openvpn_instance_home:
+  openvpn_topology: subnet
+  openvpn_port: 1193
+  openvpn_max_clients: 1
+  openvpn_server: 192.168.255.0 255.255.255.240
+  openvpn_use_certs: yes
+  openvpn_clients_certs: [ 'home2vps' ]
+  openvpn_check_username_in_cert: yes
+  openvpn_use_auth_file: yes
+  openvpn_server_options:
+     - "route 172.31.1.20 255.255.255.255"
+     - "route 172.31.5.100 255.255.255.255"
+  openvpn_clients_config:
+   'home2vps':
+     content: |
+       iroute 172.31.1.20 255.255.255.255
+       iroute 172.31.5.100 255.255.255.255
+
+openvpn_instance_warrior:
+  openvpn_topology: subnet
+  openvpn_port: 1194
+  openvpn_max_clients: 7
+  openvpn_server: 192.168.255.16 255.255.255.240
+  openvpn_clients_certs: [ 'vps_brice' ]
+  openvpn_check_username_in_cert: yes
+  openvpn_use_bsdauth: yes
+  openvpn_use_auth_file: yes
+
+  openvpn_server_options:
+    - 'push "redirect-gateway def1 bypass-dhcp"'
+    - 'push "dhcp-option DNS 8.8.8.8"'
+    - 'push "dhcp-option DNS 8.8.4.4"'

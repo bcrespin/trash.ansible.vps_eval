@@ -144,7 +144,6 @@ Vagrant.configure("2") do |config|
     end
     fw1.vm.provision "shell",run: "always", inline: <<-SHELL
                 route delete default
-                echo "172.31.3.251" > /etc/mygate
                 route add -inet 0/0 172.31.3.251
                 echo 'net.inet.ip.forwarding=1' >> /etc/sysctl.conf
                 sysctl -w net.inet.ip.forwarding=1

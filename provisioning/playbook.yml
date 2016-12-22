@@ -33,6 +33,7 @@
   gather_facts: False
   roles:
     - ansible_motd
+    - ansible-resolv
   tasks:
     - name: generate pf.conf file
       copy: content="{{ pf_file_content }}" dest=/etc/pf.conf mode=0600 owner=root group=wheel
@@ -52,3 +53,11 @@
       openbsd_pkg: name={{ item }} state=present
       with_items: [ 'lynx','wget','openvpn']
       when: ansible_os_family  == 'OpenBSD' 
+
+- name: vps stuff
+  hosts: openbsd_vps
+  become: true
+  gather_facts: False
+  roles:
+    - { role: boxeman.openvpn , openvpn_instance: "{{ openvpn_instance_home}}" , openvpn_instance_name: home }
+    - { role: boxeman.openvpn , openvpn_instance: "{{ openvpn_instance_warrior}}" , openvpn_instance_name: warrior }
