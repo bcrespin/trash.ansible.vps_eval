@@ -115,7 +115,6 @@ Vagrant.configure("2") do |config|
 		route delete default
 		route add -inet 172.31.3.0/24 10.0.0.251
 		route add -inet 0/0 10.0.0.253
-                echo 'net.inet.ip.forwarding=1' >> /etc/sysctl.conf
                 sysctl -w net.inet.ip.forwarding=1
 		sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
                 ln -sf /usr/local/bin/python /usr/bin/python
@@ -145,10 +144,8 @@ Vagrant.configure("2") do |config|
     fw1.vm.provision "shell",run: "always", inline: <<-SHELL
                 route delete default
                 route add -inet 0/0 172.31.3.251
-                echo 'net.inet.ip.forwarding=1' >> /etc/sysctl.conf
                 sysctl -w net.inet.ip.forwarding=1
                 ln -sf /usr/local/bin/python /usr/bin/python
-
     SHELL
     fw1.vm.provision "ansible" do |ansible|
       ansible.groups = ansible_groups
@@ -172,7 +169,6 @@ Vagrant.configure("2") do |config|
     end
     client1.vm.provision "shell", run: "always",inline: <<-SHELL
                 route delete default
-                echo "172.31.1.254" > /etc/mygate
                 route add -inet 0/0 172.31.1.254
                 sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
                 ln -sf /usr/local/bin/python /usr/bin/python
@@ -199,7 +195,6 @@ Vagrant.configure("2") do |config|
     end
     client2.vm.provision "shell",run: "always", inline: <<-SHELL
                 route delete default
-                echo "172.31.1.254" > /etc/mygate
                 route add -inet 0/0 172.31.1.254
                 sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
                 ln -sf /usr/local/bin/python /usr/bin/python
@@ -223,10 +218,10 @@ Vagrant.configure("2") do |config|
       vb.memory = "256"
       vb.name = "vpnvps1"
     end
-    vpnvps1.vm.provision "shell", inline: <<-SHELL
+    vpnvps1.vm.provision "shell",run: "always", inline: <<-SHELL
                 route delete default
-                echo "172.31.5.254" > /etc/mygate
                 route add -inet 0/0 172.31.5.254
+		sysctl -w net.inet.ip.forwarding=1
                 sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
                 ln -sf /usr/local/bin/python /usr/bin/python
     SHELL

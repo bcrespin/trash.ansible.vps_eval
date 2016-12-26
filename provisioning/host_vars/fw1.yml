@@ -8,10 +8,13 @@ pf_file_content: |
   external="em1"
   internal="em2"
   dmz="em3"
+  vpnvps1="172.31.5.100"
   table <internal_nets> { $internal:network , $dmz:network, $external:network }
   table <ftp-openbsd-org> { 129.128.5.191 }
   table <internet-dns> { 10.0.0.252, 10.0.0.253 }
   table <openvpn-vps> {10.0.0.10 }
+  table <reroute_to_vpn_vps> { 172.31.1.20 }
+
   ##global 
   ################
   set skip on lo
@@ -23,6 +26,7 @@ pf_file_content: |
   match out on $external from any to any nat-to ($external) tagged ALLOWED_TO_OUTSIDE
   ##fw rules
   ################
+  pass in quick on $internal from <reroute_to_vpn_vps> to any route-to ( $dmz $vpnvps1) tag REROUTE_TO_VPN
   pass in quick on $internal from $internal:network to ! <internal_nets> tag ALLOWED_TO_OUTSIDE
   pass in quick on $internal from $internal:network to $dmz:network tag ALLOWED_TO_DMZ
   pass in quick on $dmz inet proto tcp from $dmz:network to <ftp-openbsd-org> port 80 tag ALLOWED_TO_OUTSIDE
@@ -33,6 +37,7 @@ pf_file_content: |
   #enforce policies for outbound interfaces
   pass out quick on $external tagged ALLOWED_TO_OUTSIDE
   pass out quick on $dmz tagged ALLOWED_TO_DMZ
+  pass out quick on $dmz tagged REROUTE_TO_VPN
   # firewall is allowed to do all
   pass out quick from self to any
   # default policy
