@@ -44,7 +44,7 @@ openvpn_instance_home:
   openvpn_dev: tun0
   openvpn_topology: subnet
   openvpn_port: 1193
-  openvpn_max_clients: 1
+  openvpn_max_clients: 5
   openvpn_server: 192.168.255.0 255.255.255.240
   openvpn_use_certs: yes
   openvpn_clients_certs: [ 'home2vps' ]
