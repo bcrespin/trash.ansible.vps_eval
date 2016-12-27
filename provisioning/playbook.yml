@@ -1,4 +1,5 @@
 ---
+
 - hosts: all
   tasks:
      - group_by: key=OS_{{ ansible_os_family }}
