@@ -25,8 +25,8 @@ pf_file_content: |
   ##fw rules
   ################
   block in quick from urpf-failed label uRPF
-  pass quick on tun+ from <lan_openvpn_home_site> to any tag FROM_VPN
-  pass quick on tun+ from <lan_openvpn_warrior> to any tag FROM_VPN
+  pass quick on tun0 from <lan_openvpn_home_site> to any tag FROM_VPN
+  pass quick on tun1 from <lan_openvpn_warrior> to any tag FROM_VPN
 
   pass in quick on $main proto udp from <openvpn-clients> to $main:0 port 1193 
   pass in quick on $main proto icmp from <openvpn-clients> to  $main:0 icmp-type echoreq 
@@ -41,6 +41,7 @@ pf_file_content: |
   block all
 
 openvpn_instance_home:
+  openvpn_dev: tun0
   openvpn_topology: subnet
   openvpn_port: 1193
   openvpn_max_clients: 1
@@ -59,6 +60,7 @@ openvpn_instance_home:
        iroute 172.31.5.100 255.255.255.255
 
 openvpn_instance_warrior:
+  openvpn_dev: tun1
   openvpn_topology: subnet
   openvpn_port: 1194
   openvpn_max_clients: 7

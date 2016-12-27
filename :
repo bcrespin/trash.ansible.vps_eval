@@ -87,7 +87,7 @@
       with_items: ['/etc/openvpn_home','/etc/openvpn_home/keys','/etc/openvpn_home/keys/issued','/etc/openvpn_home/keys/private']
 
     - name: create auth file
-      copy: content='home2vps\ntoto\n' dest=/etc/openvpn_home/auth.txt
+      file: content='home2vps\ntoto' dest=/etc/openvpn_home/auth.txt state=file
 
     - name: copy openvpn client  cert keys 
       copy: src=tmp/openvpn_home_{{ vpnvps_target }}/{{ item }} dest=/etc/openvpn_home/{{ item }} mode=0600 owner=root group=wheel
@@ -99,8 +99,8 @@
     - name: update config file
       replace: dest=/etc/openvpn_home/openvpn.conf regexp={{ item.0 }} replace={{ item.1 }}
       with_together:
-        - [ ' ta.key',' ca.crt' , ' client.crt' , ' dh2048.pem' , ' client.key', 'auth-user-pass*' ]
-        - [' keys/ta.key',' keys/ca.crt',' keys/issued/home2vps.crt',' keys/dh2048.pem',' keys/private/home2vps.key','auth-user-pass auth.txt']
+        - [ 'ta.key','ca.crt' , 'client.crt' , 'dh2048.pem' , 'client.key', 'auth-user-pass*' ]
+        - ['keys/ta.key','keys/ca.crt','keys/issued/home2vps.crt','keys/dh2048.pem','keys/private/home2vps.key','auth-user-pass auth.txt']
 
     - name: copy rc script
       copy: src=tmp/openvpn_home_{{ vpnvps_target }}/rc_script_openvpn_home  dest=/etc/rc.d/openvpn_home mode=0755 owner=root group=wheel

@@ -1,4 +1,5 @@
 ---
+vpnvps_target: vps1
 resolv_nameservers:
   - 10.0.0.252
 resolv_domain: vagrant

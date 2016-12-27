@@ -154,6 +154,32 @@ Vagrant.configure("2") do |config|
 
   end
 
+  config.vm.define "vpnvps1", autostart: true do |vpnvps1|
+    vpnvps1.vm.synced_folder ".", "/vagrant", disabled: true
+    vpnvps1.vm.hostname ="vpnvps1"
+    vpnvps1.vm.box="trombik/ansible-openbsd-6.0-amd64"
+    vpnvps1.vm.box_check_update = false
+    vpnvps1.vm.network "private_network", ip: "172.31.5.100", netmask: "255.255.255.0",
+      virtualbox__intnet: "dmz"
+
+    vpnvps1.vm.provider "virtualbox" do |vb|
+      vb.gui = false
+      vb.memory = "256"
+      vb.name = "vpnvps1"
+    end
+    vpnvps1.vm.provision "shell",run: "always", inline: <<-SHELL
+                route delete default
+                route add -inet 0/0 172.31.5.254
+                sysctl -w net.inet.ip.forwarding=1
+                sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
+                ln -sf /usr/local/bin/python /usr/bin/python
+    SHELL
+    vpnvps1.vm.provision "ansible" do |ansible|
+      ansible.groups = ansible_groups
+      ansible.playbook = "provisioning/playbook.yml"
+    end
+  end
+
   config.vm.define "client1", autostart: true do |client1|
     client1.vm.synced_folder ".", "/vagrant", disabled: true
     client1.vm.hostname ="client1"
@@ -204,33 +230,6 @@ Vagrant.configure("2") do |config|
       ansible.playbook = "provisioning/playbook.yml"
     end
   end
-
-  config.vm.define "vpnvps1", autostart: true do |vpnvps1|
-    vpnvps1.vm.synced_folder ".", "/vagrant", disabled: true
-    vpnvps1.vm.hostname ="vpnvps1"
-    vpnvps1.vm.box="trombik/ansible-openbsd-6.0-amd64"
-    vpnvps1.vm.box_check_update = false
-    vpnvps1.vm.network "private_network", ip: "172.31.5.100", netmask: "255.255.255.0",
-      virtualbox__intnet: "dmz"
-
-    vpnvps1.vm.provider "virtualbox" do |vb|
-      vb.gui = false
-      vb.memory = "256"
-      vb.name = "vpnvps1"
-    end
-    vpnvps1.vm.provision "shell",run: "always", inline: <<-SHELL
-                route delete default
-                route add -inet 0/0 172.31.5.254
-		sysctl -w net.inet.ip.forwarding=1
-                sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
-                ln -sf /usr/local/bin/python /usr/bin/python
-    SHELL
-    vpnvps1.vm.provision "ansible" do |ansible|
-      ansible.groups = ansible_groups
-      ansible.playbook = "provisioning/playbook.yml"
-    end
-  end
-
 
 #end final
 end

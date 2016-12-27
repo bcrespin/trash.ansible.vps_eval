@@ -1,0 +1,75 @@
+interfaces {
+    ethernet eth0 {
+        address dhcp
+        duplex auto
+        hw-id 08:00:27:0f:ec:bf
+        smp_affinity auto
+        speed auto
+    }
+    ethernet eth1 {
+        hw-id 08:00:27:69:ea:b4
+    }
+    loopback lo {
+    }
+}
+service {
+    ssh {
+        disable-host-validation
+        port 22
+    }
+}
+system {
+    config-management {
+        commit-revisions 20
+    }
+    host-name vyos
+    login {
+        user ******** {
+            authentication {
+                encrypted-password ****************
+                plaintext-password ****************
+                public-keys ******** {
+                    key ****************
+                    type ssh-rsa
+                }
+            }
+            level admin
+        }
+        user vyos {
+            authentication {
+                encrypted-password ****************
+                plaintext-password ****************
+            }
+            level admin
+        }
+    }
+    ntp {
+        server 0.pool.ntp.org {
+        }
+        server 1.pool.ntp.org {
+        }
+        server 2.pool.ntp.org {
+        }
+    }
+    package {
+        auto-sync 1
+        repository community {
+            components main
+            distribution helium
+            password ****************
+            url http://packages.vyos.net/vyos
+            username ""
+        }
+    }
+    syslog {
+        global {
+            facility all {
+                level notice
+            }
+            facility protocols {
+                level debug
+            }
+        }
+    }
+    time-zone UTC
+}

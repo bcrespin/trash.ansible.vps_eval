@@ -33,6 +33,7 @@ pf_file_content: |
   pass in quick on $dmz inet proto udp from $dmz:network to <internet-dns> port 53 tag ALLOWED_TO_OUTSIDE
   pass in quick on $dmz inet proto icmp from $dmz:network to any icmp-type echoreq  tag ALLOWED_TO_OUTSIDE
   pass in quick on $dmz inet proto udp from $dmz:network to <openvpn-vps> port 1193 tag ALLOWED_TO_OUTSIDE
+  pass in quick on $dmz inet proto tcp from $dmz:network to <openvpn-vps> port 22 tag ALLOWED_TO_OUTSIDE
 
   #enforce policies for outbound interfaces
   pass out quick on $external tagged ALLOWED_TO_OUTSIDE
