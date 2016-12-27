@@ -14,6 +14,9 @@ pf_file_content: |
   table <internet-dns> { 10.0.0.252, 10.0.0.253 }
   table <openvpn-vps> {10.0.0.10 }
   table <reroute_to_vpn_vps> { 172.31.1.20 }
+  p2p_redirect_tcp_ports_host1="{ 80 , 443 }"
+  p2p_redirect_udp_ports_host1="{ 80 , 443 }"
+  p2p_host1="172.31.1.20"
 
   ##global 
   ################
@@ -34,11 +37,16 @@ pf_file_content: |
   pass in quick on $dmz inet proto icmp from $dmz:network to any icmp-type echoreq  tag ALLOWED_TO_OUTSIDE
   pass in quick on $dmz inet proto udp from $dmz:network to <openvpn-vps> port 1193 tag ALLOWED_TO_OUTSIDE
   pass in quick on $dmz inet proto tcp from $dmz:network to <openvpn-vps> port 22 tag ALLOWED_TO_OUTSIDE
-
+ 
+  pass in quick on $dmz inet proto tcp from any to $p2p_host1 port $p2p_redirect_tcp_ports_host1 reply-to ($dmz $vpnvps1) tag P2P
+  pass in quick on $dmz inet proto udp from any to $p2p_host1 port $p2p_redirect_udp_ports_host1 reply-to ($dmz $vpnvps1) tag P2P
+ 
   #enforce policies for outbound interfaces
   pass out quick on $external tagged ALLOWED_TO_OUTSIDE
   pass out quick on $dmz tagged ALLOWED_TO_DMZ
   pass out quick on $dmz tagged REROUTE_TO_VPN
+  pass out quick on $internal tagged P2P
+
   # firewall is allowed to do all
   pass out quick from self to any
   # default policy

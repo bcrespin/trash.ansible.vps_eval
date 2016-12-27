@@ -7,11 +7,19 @@ pf_file_content: |
   ##macro
   ################
   main="em1"
+  vpn_home="tun0"
+  vpn_home_gw="192.168.255.1"
   table <ftp-openbsd-org> { 129.128.5.191 }
   table <internet-dns> { 10.0.0.252, 10.0.0.253 }
   table <openvpn-clients> {172.31.3.254 }
   table <lan_openvpn_home_site> { 172.31.1.20, 172.31.5.100}
-  
+  table <ALLOW_HTTP_PROXY> { 172.31.1.0/24 }
+  p2p_redirect_tcp_ports_host1="{ 80 , 443 }"
+  p2p_redirect_udp_ports_host1="{ 80 , 443 }"
+  p2p_host1="172.31.1.20"
+  http_proxy_port="{ 8888 }"
+  http_proxy_user="_tinyproxy"
+ 
   ##global
   ################
   set skip on lo
@@ -24,13 +32,20 @@ pf_file_content: |
 
   ##fw rules
   ################
-  pass quick on tun+ tagged TO_VPN
-  # further for p2p inbound
-  #pass quick on tun+ from  any to ??? tag FROM_VPN
-  pass in quick on $main from <lan_openvpn_home_site> to ! self route-to (tun0 192.168.255.1) tag TO_VPN
-  
+  pass quick on $vpn_home tagged TO_VPN
+  pass in quick on $vpn_home proto udp from any to $p2p_host1 port $p2p_redirect_udp_ports_host1 reply-to ($vpn_home $vpn_home_gw) tag P2P
+  pass in quick on $vpn_home proto tcp from any to $p2p_host1 port $p2p_redirect_tcp_ports_host1 reply-to ($vpn_home $vpn_home_gw) tag P2P
+
+  pass in quick on $main from <lan_openvpn_home_site> to ! self route-to ($vpn_home $vpn_home_gw) tag TO_VPN
+
+  pass in quick on $main proto tcp from <ALLOW_HTTP_PROXY> to $main:0  port $http_proxy_port 
+  pass out quick on $main inet proto tcp from $main:0 to ! self  user $http_proxy_user route-to ($vpn_home $vpn_home_gw) tag TO_VPN  
   #enforce policies for outbound interfaces
   pass out quick on $main tagged FROM_VPN
+  pass out quick on $main tagged P2P
 
   # firewall is allowed to do all
   pass out quick from self to any
+  
+  #default
+  block all

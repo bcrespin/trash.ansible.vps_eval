@@ -2,3 +2,4 @@ backup/*
 provisioning/tmp/*
 provisioning/roles/*
 .vagrant/*
+.gitold/*

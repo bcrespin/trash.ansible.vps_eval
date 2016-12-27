@@ -7,7 +7,7 @@ interfaces {
         speed auto
     }
     ethernet eth1 {
-        hw-id 08:00:27:eb:42:9f
+        address 10.0.0.253/24
     }
     loopback lo {
     }
@@ -22,7 +22,7 @@ system {
     config-management {
         commit-revisions 20
     }
-    host-name vyos
+    host-name router3
     login {
         user ******** {
             authentication {

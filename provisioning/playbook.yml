@@ -68,8 +68,9 @@
       with_items: [ 'client-template.ovpn' ,'keys/ta.key', 'keys/ca.crt','keys/dh2048.pem','keys/issued/home2vps.crt','keys/private/home2vps.key' ]
     - name: fetch opevpn startup script
       fetch: src=/etc/rc.d/openvpn_home dest=tmp/openvpn_home_{{ inventory_hostname }}/rc_script_openvpn_home flat=yes
+# later..has to be in vault:
     - name: temporary selfmade auth_file
-      file: content='home2vps:819f04e5706f509de5a6b833d3f561369156820b4240c7c26577b223e59aae97' dest=/etc/openvpn_home/auth_file  
+      copy: content='home2vps:819f04e5706f509de5a6b833d3f561369156820b4240c7c26577b223e59aae97' dest=/etc/openvpn_home/auth_file  
 
 - name: vpnvps1 stuff
   hosts: vpnvps1
@@ -87,6 +88,7 @@
       file: path={{ item }} state=directory owner=root group=wheel mode=0640
       with_items: ['/etc/openvpn_home','/etc/openvpn_home/keys','/etc/openvpn_home/keys/issued','/etc/openvpn_home/keys/private']
 
+# later must be in vault :)
     - name: create auth file
       copy: content='home2vps\ntoto\n' dest=/etc/openvpn_home/auth.txt
 
