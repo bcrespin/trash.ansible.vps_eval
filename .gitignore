@@ -1,4 +1,4 @@
-backup/*
+provision/backup/*
 provisioning/tmp/*
 provisioning/roles/*
 .vagrant/*
