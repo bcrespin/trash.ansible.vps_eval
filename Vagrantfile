@@ -21,6 +21,7 @@ Vagrant.configure("2") do |config|
    "home_clients" => [
         "client1",
         "client2",
+        "client3",
    ],
   } 
 
@@ -79,14 +80,9 @@ Vagrant.configure("2") do |config|
       vb.name = "router1"
     end
     router1.vm.provision "shell",run: "always", inline: <<-SHELL
-                route delete default
-                echo "10.0.0.252" > /etc/mygate
-                route add -inet 0/0 10.0.0.252
-		echo 'net.inet.ip.forwarding=1' >> /etc/sysctl.conf
-                sysctl -w net.inet.ip.forwarding=1
-
-                sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
-                ln -sf /usr/local/bin/python /usr/bin/python
+      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 10.0.0.252 )
+      (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
+      ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
 
     router1.vm.provision "ansible" do |ansible|
@@ -112,12 +108,10 @@ Vagrant.configure("2") do |config|
       vb.name = "vps1"
     end
     vps1.vm.provision "shell",run: "always", inline: <<-SHELL
-		route delete default
-		route add -inet 172.31.3.0/24 10.0.0.251
-		route add -inet 0/0 10.0.0.253
-                sysctl -w net.inet.ip.forwarding=1
-		sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
-                ln -sf /usr/local/bin/python /usr/bin/python
+      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 10.0.0.253 )
+      (route -n show | grep  172.31.3/24 ) || ( route add -inet 172.31.3.0/24 10.0.0.251 )
+      (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
+      ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
     vps1.vm.provision "ansible" do |ansible|
       ansible.groups = ansible_groups
@@ -142,10 +136,9 @@ Vagrant.configure("2") do |config|
       vb.name = "fw1"
     end
     fw1.vm.provision "shell",run: "always", inline: <<-SHELL
-                route delete default
-                route add -inet 0/0 172.31.3.251
-                sysctl -w net.inet.ip.forwarding=1
-                ln -sf /usr/local/bin/python /usr/bin/python
+      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.3.251 )
+      (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
+      ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
     fw1.vm.provision "ansible" do |ansible|
       ansible.groups = ansible_groups
@@ -168,11 +161,9 @@ Vagrant.configure("2") do |config|
       vb.name = "vpnvps1"
     end
     vpnvps1.vm.provision "shell",run: "always", inline: <<-SHELL
-                route delete default
-                route add -inet 0/0 172.31.5.254
-                sysctl -w net.inet.ip.forwarding=1
-                sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
-                ln -sf /usr/local/bin/python /usr/bin/python
+      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.5.254 )
+      (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
+      ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
     vpnvps1.vm.provision "ansible" do |ansible|
       ansible.groups = ansible_groups
@@ -194,10 +185,9 @@ Vagrant.configure("2") do |config|
       vb.name = "client1"
     end
     client1.vm.provision "shell", run: "always",inline: <<-SHELL
-                route delete default
-                route add -inet 0/0 172.31.1.254
-                sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
-                ln -sf /usr/local/bin/python /usr/bin/python
+      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.1.254 )
+      (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
+      ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
     client1.vm.provision "ansible" do |ansible|
       ansible.groups = ansible_groups
@@ -220,16 +210,40 @@ Vagrant.configure("2") do |config|
       vb.name = "client2"
     end
     client2.vm.provision "shell",run: "always", inline: <<-SHELL
-                route delete default
-                route add -inet 0/0 172.31.1.254
-                sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf"
-                ln -sf /usr/local/bin/python /usr/bin/python
+      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.1.254 )
+      (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
+      ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
     client2.vm.provision "ansible" do |ansible|
       ansible.groups = ansible_groups
       ansible.playbook = "provisioning/playbook.yml"
     end
   end
+
+  config.vm.define "client3", autostart: true do |client3|
+    client3.vm.synced_folder ".", "/vagrant", disabled: true
+    client3.vm.hostname ="client3"
+    client3.vm.box="trombik/ansible-openbsd-6.0-amd64"
+    client3.vm.box_check_update = false
+    client3.vm.network "private_network", ip: "172.31.1.30", netmask: "255.255.255.0",
+      virtualbox__intnet: "home"
+
+    client3.vm.provider "virtualbox" do |vb|
+      vb.gui = false
+      vb.memory = "256"
+      vb.name = "client3"
+    end
+    client3.vm.provision "shell",run: "always", inline: <<-SHELL
+      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.1.254 )
+      (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
+      ln -sf /usr/local/bin/python /usr/bin/python
+    SHELL
+    client3.vm.provision "ansible" do |ansible|
+      ansible.groups = ansible_groups
+      ansible.playbook = "provisioning/playbook.yml"
+    end
+  end
+
 
 #end final
 end

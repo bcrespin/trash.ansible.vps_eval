@@ -1,8 +1,33 @@
 ---
+ip_forward_enable: true
+ip_forward_sysctl_value: net.inet.ip.forwarding
 vpnvps_target: vps1
 resolv_nameservers:
   - 10.0.0.252
 resolv_domain: vagrant
+package_list: [ 'lynx','openvpn','tinyproxy']
+tinyproxy_config: |
+  User _tinyproxy
+  Group _tinyproxy
+  Port 8888
+  Listen 172.31.5.100
+  BindSame yes
+  Timeout 600
+  DefaultErrorFile "/usr/local/share/tinyproxy/default.html"
+  StatFile "/usr/local/share/tinyproxy/stats.html"
+  LogFile "/var/log/tinyproxy/tinyproxy.log"
+  LogLevel Warning
+  MaxClients 100
+  MinSpareServers 5
+  MaxSpareServers 20
+  StartServers 10
+  MaxRequestsPerChild 0
+  Allow 172.31.1.0/24
+  ViaProxyName "tinyproxy"
+  DisableViaHeader Yes
+  ConnectPort 443
+  ConnectPort 563
+
 pf_file_content: |
   ##macro
   ################

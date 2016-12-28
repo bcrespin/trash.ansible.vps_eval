@@ -1,8 +1,16 @@
 ---
-
-- hosts: all
+- name: all hosts
+  hosts: all
+  become: true
   tasks:
-     - group_by: key=OS_{{ ansible_os_family }}
+    - name: enable ip forwarding
+      sysctl:
+        name: "{{ ip_forward_sysctl_value }}"
+        value: 1
+        sysctl_set: yes
+      when: "{{ip_forward_enable|default(false) }}" 
+
+    - group_by: key=OS_{{ ansible_os_family }}
 
 - name: routers config (vyos)
   hosts: vyos_routers
@@ -36,6 +44,11 @@
     - ansible_motd
     - ansible-resolv
   tasks:
+    - name: install required package (OpenBSD)
+      openbsd_pkg: name={{ item }} state=present
+      with_items: "{{  package_list|default('') }}"
+      when: item != ''
+
     - name: generate pf.conf file
       copy: content="{{ pf_file_content }}" dest=/etc/pf.conf mode=0600 owner=root group=wheel
       when: pf_file_content is defined
@@ -45,16 +58,6 @@
       command: sh -c "/sbin/pfctl -n -f /etc/pf.conf && /sbin/pfctl -f /etc/pf.conf"
       when: result.changed 
 
-- name: home clients stuff
-  hosts: home_clients
-  become: true
-  gather_facts: False
-  tasks:
-    - name: install required package (OpenBSD)  
-      openbsd_pkg: name={{ item }} state=present
-      with_items: [ 'lynx','wget','openvpn']
-      when: ansible_os_family  == 'OpenBSD' 
-
 - name: vps stuff
   hosts: openbsd_vps
   become: true
@@ -63,28 +66,43 @@
     - { role: boxeman.openvpn , openvpn_instance: "{{ openvpn_instance_home}}" , openvpn_instance_name: home }
     - { role: boxeman.openvpn , openvpn_instance: "{{ openvpn_instance_warrior}}" , openvpn_instance_name: warrior }
   tasks:
-    - name: fetch vps1 openvpn client file
+    - name: fetch vps1 openvpn home client file
       fetch: src=/etc/openvpn_home/{{ item }}  dest=tmp/openvpn_home_{{ inventory_hostname }}/{{ item }} flat=yes
       with_items: [ 'client-template.ovpn' ,'keys/ta.key', 'keys/ca.crt','keys/dh2048.pem','keys/issued/home2vps.crt','keys/private/home2vps.key' ]
-    - name: fetch opevpn startup script
+
+    - name: fetch openvpn home startup script
       fetch: src=/etc/rc.d/openvpn_home dest=tmp/openvpn_home_{{ inventory_hostname }}/rc_script_openvpn_home flat=yes
+
+    - name: fetch vps1 openvpn warrior client file
+      fetch: src=/etc/openvpn_warrior/{{ item }}  dest=tmp/openvpn_warrior_{{ inventory_hostname }}/{{ item }} flat=yes
+      with_items: [ 'client-template.ovpn' ,'keys/ta.key', 'keys/ca.crt','keys/dh2048.pem','keys/issued/vps_brice.crt','keys/private/vps_brice.key' ]
+
 # later..has to be in vault:
     - name: temporary selfmade auth_file
       copy: content='home2vps:819f04e5706f509de5a6b833d3f561369156820b4240c7c26577b223e59aae97' dest=/etc/openvpn_home/auth_file  
 
-- name: vpnvps1 stuff
+    - name: start ftpproxy service
+      service: name=ftpproxy state=started enabled=yes
+    
+# temp - ensure nginx package installed before
+- name: temp nginx 
+  hosts: all
+  become: true
+  tasks:
+    - name: start nginx service
+      service: name=nginx state=started enabled=yes
+      when: "{{ nginx_run|default(false) }}" 
+
+- name: vpnvps stuff
   hosts: vpnvps1
   become: true
   tasks:
+# tmp to deal with vpn remote is a name and DNS not really setup
     - name: add hostfile entries
       lineinfile: dest=/etc/hosts line={{ item }}
       with_items: [ '10.0.0.10	vps1' ]
 
-    - name: install required package (OpenBSD)
-      openbsd_pkg: name={{ item }} state=present
-      with_items: [ 'openvpn']
-
-    - name: create openvpn client folder
+    - name: create openvpn home client folder
       file: path={{ item }} state=directory owner=root group=wheel mode=0640
       with_items: ['/etc/openvpn_home','/etc/openvpn_home/keys','/etc/openvpn_home/keys/issued','/etc/openvpn_home/keys/private']
 
@@ -92,21 +110,72 @@
     - name: create auth file
       copy: content='home2vps\ntoto\n' dest=/etc/openvpn_home/auth.txt
 
-    - name: copy openvpn client  cert keys 
+    - name: copy openvpn home keys and certs
       copy: src=tmp/openvpn_home_{{ vpnvps_target }}/{{ item }} dest=/etc/openvpn_home/{{ item }} mode=0600 owner=root group=wheel
       with_items: [  'keys/ca.crt','keys/ta.key', 'keys/dh2048.pem','keys/issued/home2vps.crt','keys/private/home2vps.key' ]
 
-    - name: copy client config file
+    - name: copy openvpn client home config file
       copy: src=tmp/openvpn_home_{{ vpnvps_target }}/client-template.ovpn dest=/etc/openvpn_home/openvpn.conf mode=0600 owner=root group=wheel
 
-    - name: update config file
+    - name: update openvpn home template config file
       replace: dest=/etc/openvpn_home/openvpn.conf regexp={{ item.0 }} replace={{ item.1 }}
       with_together:
         - [ ' ta.key',' ca.crt' , ' client.crt' , ' dh2048.pem' , ' client.key', 'auth-user-pass*' ]
         - [' keys/ta.key',' keys/ca.crt',' keys/issued/home2vps.crt',' keys/dh2048.pem',' keys/private/home2vps.key','auth-user-pass auth.txt']
 
-    - name: copy rc script
+    - name: copy openvpn home rc script
       copy: src=tmp/openvpn_home_{{ vpnvps_target }}/rc_script_openvpn_home  dest=/etc/rc.d/openvpn_home mode=0755 owner=root group=wheel
   
     - name: start openvpn client
       service: name=openvpn_home state=started enabled=yes       
+
+    - name: tinyproxy config
+      copy: content={{ tinyproxy_config }} dest=/etc/tinyproxy/tinyproxy.conf
+ 
+    - name: tinyproxy startup
+      service: name=tinyproxy state=started enabled=yes
+
+- name: client1 stuff
+  hosts: client1
+  become: true
+  tasks:
+# tmp to deal with vpn remote is a name and DNS not really setup
+    - name: lynx with http proxy
+      lineinfile: 
+        dest: /etc/lynx.cfg
+        regexp: '(^#http_proxy:|^http_proxy:)'
+        line: 'http_proxy:{{ lynx_http_proxy }}'
+      when: lynx_http_proxy is defined
+
+    - name: lynx with https proxy
+      lineinfile:
+        dest: /etc/lynx.cfg
+        regexp: '(^#https_proxy:|^https_proxy:)'
+        line: 'https_proxy:{{ lynx_https_proxy }}'
+      when: lynx_https_proxy is defined
+
+- name: client3 stuff
+  hosts: client3
+  become: true
+  tasks:
+    - name: add hostfile entries
+      lineinfile: dest=/etc/hosts line={{ item }}
+      with_items: [ '10.0.0.10  vps1' ]
+
+    - name: create openvpn warrior client folder
+      file: path={{ item }} state=directory owner=root group=wheel mode=0640
+      with_items: ['/etc/openvpn_warrior','/etc/openvpn_warrior/keys','/etc/openvpn_warrior/keys/issued','/etc/openvpn_warrior/keys/private']
+
+    - name: copy openvpn warrior keys and certs
+      copy: src=tmp/openvpn_warrior_{{ vpnvps_target }}/{{ item }} dest=/etc/openvpn_warrior/{{ item }} mode=0600 owner=root group=wheel
+      with_items: [  'keys/ca.crt','keys/ta.key', 'keys/dh2048.pem','keys/issued/vps_brice.crt','keys/private/vps_brice.key' ]
+
+    - name: copy openvpn client warrior config file
+      copy: src=tmp/openvpn_warrior_{{ vpnvps_target }}/client-template.ovpn dest=/etc/openvpn_warrior/openvpn.conf mode=0600 owner=root group=wheel
+
+    - name: update openvpn warriortemplate config file
+      replace: dest=/etc/openvpn_warrior/openvpn.conf regexp={{ item.0 }} replace={{ item.1 }}
+      with_together:
+        - [ ' ta.key',' ca.crt' , ' client.crt' , ' dh2048.pem' , ' client.key' ]
+        - [' keys/ta.key',' keys/ca.crt',' keys/issued/vps_brice.crt',' keys/dh2048.pem',' keys/private/vps_brice.key']
+

@@ -1,4 +1,6 @@
 ---
+ip_forward_enable: true
+ip_forward_sysctl_value: net.inet.ip.forwarding
 resolv_nameservers:
   - 10.0.0.252
 resolv_domain: vagrant

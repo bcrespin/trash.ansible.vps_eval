@@ -2,5 +2,6 @@
 resolv_nameservers:
   - 10.0.0.252
 resolv_domain: vagrant
-package_list: [ 'lynx','nginx--']
-nginx_run: true
+package_list: [ 'lynx','openvpn']
+vpnvps_target: vps1
+
