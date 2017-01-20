@@ -43,15 +43,20 @@
   roles:
     - ansible_motd
     - ansible-resolv
+    - boxeman.pkg_config
   tasks:
     - name: install required package (OpenBSD)
       openbsd_pkg: name={{ item }} state=present
       with_items: "{{  package_list|default('') }}"
       when: item != ''
+   
+# not using vairables from /etc/pkg.conf !!
+    - name: debug pf
+      debug: var=pf_file_content      
 
     - name: generate pf.conf file
       copy: content="{{ pf_file_content }}" dest=/etc/pf.conf mode=0600 owner=root group=wheel
-      when: pf_file_content is defined
+#      when: pf_file_content is defined
       register: result
 
     - name: reload pf service
@@ -83,7 +88,7 @@
 
     - name: start ftpproxy service
       service: name=ftpproxy state=started enabled=yes
-    
+
 # temp - ensure nginx package installed before
 - name: temp nginx 
   hosts: all
@@ -127,7 +132,7 @@
       copy: src=tmp/openvpn_home_{{ vpnvps_target }}/rc_script_openvpn_home  dest=/etc/rc.d/openvpn_home mode=0755 owner=root group=wheel
   
     - name: start openvpn client
-      service: name=openvpn_home state=started enabled=yes       
+      service: name=openvpn_home state=stopped enabled=no
 
     - name: tinyproxy config
       copy: content={{ tinyproxy_config }} dest=/etc/tinyproxy/tinyproxy.conf
@@ -135,11 +140,57 @@
     - name: tinyproxy startup
       service: name=tinyproxy state=started enabled=yes
 
+- name: fw1 stuff
+  hosts: fw1
+  become: true
+  tasks:
+    - name: add hostfile entries
+      lineinfile: dest=/etc/hosts line={{ item }}
+      with_items: [ '10.0.0.10  vps1' ]
+
+    - name: create openvpn home client folder
+      file: path={{ item }} state=directory owner=root group=wheel mode=0640
+      with_items: ['/etc/openvpn_home','/etc/openvpn_home/keys','/etc/openvpn_home/keys/issued','/etc/openvpn_home/keys/private']
+
+    - name: create auth file
+      copy: content='home2vps\ntoto\n' dest=/etc/openvpn_home/auth.txt
+
+    - name: copy openvpn home keys and certs
+      copy: src=tmp/openvpn_home_{{ vpnvps_target }}/{{ item }} dest=/etc/openvpn_home/{{ item }} mode=0600 owner=root group=wheel
+      with_items: [  'keys/ca.crt','keys/ta.key', 'keys/dh2048.pem','keys/issued/home2vps.crt','keys/private/home2vps.key' ]
+
+    - name: copy openvpn client home config file
+      copy: src=tmp/openvpn_home_{{ vpnvps_target }}/client-template.ovpn dest=/etc/openvpn_home/openvpn.conf mode=0600 owner=root group=wheel
+
+    - name: update openvpn home template config file
+      replace: dest=/etc/openvpn_home/openvpn.conf regexp={{ item.0 }} replace={{ item.1 }}
+      with_together:
+        - [ ' ta.key',' ca.crt' , ' client.crt' , ' dh2048.pem' , ' client.key', 'auth-user-pass*' ]
+        - [' keys/ta.key',' keys/ca.crt',' keys/issued/home2vps.crt',' keys/dh2048.pem',' keys/private/home2vps.key','auth-user-pass auth.txt']
+
+    - name: copy openvpn home rc script
+      copy: src=tmp/openvpn_home_{{ vpnvps_target }}/rc_script_openvpn_home  dest=/etc/rc.d/openvpn_home mode=0755 owner=root group=wheel
+
+    - name: start openvpn client
+      service: name=openvpn_home state=started enabled=yes
+
+    - name: tinyproxy config
+      copy: content={{ tinyproxy_config }} dest=/etc/tinyproxy/tinyproxy.conf
+
+    - name: tinyproxy startup
+      service: name=tinyproxy state=started enabled=yes
+
+
 - name: client1 stuff
   hosts: client1
   become: true
   tasks:
 # tmp to deal with vpn remote is a name and DNS not really setup
+    - name: add users
+      user: name={{ item.value.name }} comment={{ item.value.comment }} groups={{ item.value.groups }} password={{ item.value.password }} append=yes
+      with_dict: "{{ my_users|default({}) }}"
+      when: my_users is defined
+
     - name: lynx with http proxy
       lineinfile: 
         dest: /etc/lynx.cfg
@@ -158,6 +209,11 @@
   hosts: client3
   become: true
   tasks:
+    - name: add users
+      user: name={{ item.value.name }} comment={{ item.value.comment }} groups={{ item.value.groups }} password={{ item.value.password }} append=yes
+      with_dict: "{{ my_users }}"
+      when: my_users is defined
+ 
     - name: add hostfile entries
       lineinfile: dest=/etc/hosts line={{ item }}
       with_items: [ '10.0.0.10  vps1' ]
@@ -178,4 +234,7 @@
       with_together:
         - [ ' ta.key',' ca.crt' , ' client.crt' , ' dh2048.pem' , ' client.key' ]
         - [' keys/ta.key',' keys/ca.crt',' keys/issued/vps_brice.crt',' keys/dh2048.pem',' keys/private/vps_brice.key']
+
+#    - name: add user
+#      user: name=brice comment=myself groups=wheel append=yes password="$2b$10$jiunSRQnhXDDBCQhypUzGeCzKvPkliYV5/.qU6LZUaCvJAIxufAn6"
 

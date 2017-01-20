@@ -80,7 +80,7 @@ Vagrant.configure("2") do |config|
       vb.name = "router1"
     end
     router1.vm.provision "shell",run: "always", inline: <<-SHELL
-      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 10.0.0.252 )
+      (route -n show | grep default | grep em1 )  || ( ( route delete default || true ) && route add -inet 0/0 10.0.0.252 )
       (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
       ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
@@ -108,7 +108,7 @@ Vagrant.configure("2") do |config|
       vb.name = "vps1"
     end
     vps1.vm.provision "shell",run: "always", inline: <<-SHELL
-      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 10.0.0.253 )
+      (route -n show | grep default | grep em1 )  || ( ( route delete default || true ) && route add -inet 0/0 10.0.0.253 )
       (route -n show | grep  172.31.3/24 ) || ( route add -inet 172.31.3.0/24 10.0.0.251 )
       (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
       ln -sf /usr/local/bin/python /usr/bin/python
@@ -136,7 +136,7 @@ Vagrant.configure("2") do |config|
       vb.name = "fw1"
     end
     fw1.vm.provision "shell",run: "always", inline: <<-SHELL
-      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.3.251 )
+      (route -n show | grep default | grep em1 )  || ( ( route delete default || true ) && route add -inet 0/0 172.31.3.251 )
       (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
       ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
@@ -161,7 +161,7 @@ Vagrant.configure("2") do |config|
       vb.name = "vpnvps1"
     end
     vpnvps1.vm.provision "shell",run: "always", inline: <<-SHELL
-      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.5.254 )
+      (route -n show | grep default | grep em1 )  || ( (route delete default || true ) && route add -inet 0/0 172.31.5.254 )
       (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
       ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
@@ -185,7 +185,7 @@ Vagrant.configure("2") do |config|
       vb.name = "client1"
     end
     client1.vm.provision "shell", run: "always",inline: <<-SHELL
-      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.1.254 )
+      (route -n show | grep default | grep em1 )  || ( (route delete default || true ) && route add -inet 0/0 172.31.1.254 )
       (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
       ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
@@ -210,7 +210,7 @@ Vagrant.configure("2") do |config|
       vb.name = "client2"
     end
     client2.vm.provision "shell",run: "always", inline: <<-SHELL
-      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.1.254 )
+      (route -n show | grep default | grep em1 )  || ( ( route delete default || true) && route add -inet 0/0 172.31.1.254 )
       (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
       ln -sf /usr/local/bin/python /usr/bin/python
     SHELL
@@ -234,7 +234,7 @@ Vagrant.configure("2") do |config|
       vb.name = "client3"
     end
     client3.vm.provision "shell",run: "always", inline: <<-SHELL
-      (route -n show | grep default | grep em1 )  || ( route delete default && route add -inet 0/0 172.31.1.254 )
+      (route -n show | grep default | grep em1 )  || ( (route delete default || true)  && route add -inet 0/0 172.31.1.254 )
       (grep 'interface \\"em0\\" ' /etc/dhclient.conf || sh -c "echo 'interface \\"em0\\" { ignore routers,domain-name-servers;}' >> /etc/dhclient.conf" )
       ln -sf /usr/local/bin/python /usr/bin/python
     SHELL

@@ -1,0 +1,13 @@
+---
+common_users:
+  brice_openbsd1:
+    name: brice
+    comment: myself
+    password: $2b$09$cfGmFXT8LgNuAl0SgzI51.TZZSv1TlR/Z/ZeABVax1QiYJQ4aVjHu
+    groups: wheel
+  brice_openbsd2:
+    name: brice
+    comment: myself2
+    password: $2b$09$cfGmFXT8LgNuAl0SgzI51.TZZSv1TlR/Z/ZeABVax1QiYJQ4aVjHu
+    groups: wheel,_openvpn
+

@@ -1,10 +1,13 @@
 ---
+users:
+  "{{ common_users[brice_openbsd2] }}"
 ip_forward_enable: true
 ip_forward_sysctl_value: net.inet.ip.forwarding
 resolv_nameservers:
   - 10.0.0.253
 resolv_domain: vagrant
 package_list: []
+pkg_config_openbsd_mtier_enable: true
 pf_file_content: |
   ##macro
   ################
@@ -14,7 +17,7 @@ pf_file_content: |
   table <ftp-openbsd-org> { 129.128.5.191 }
   table <internet-dns> { 10.0.0.252, 10.0.0.253 }
   table <openvpn-clients> {172.31.3.254 }
-  table <lan_openvpn_home_site> { 172.31.1.20, 172.31.5.100}
+  table <lan_openvpn_home_site> { 172.31.1.254, 172.31.1.20 , 172.31.5.100}
   table <lan_openvpn_warrior> { 192.168.255.16/28 } 
   p2p_redirect_tcp_ports_host1= "{ 80 , 443 }"
   p2p_redirect_udp_ports_host1= "{ 80 , 443 }"
@@ -49,6 +52,7 @@ pf_file_content: |
   pass in quick on $vpn_home inet proto tcp from <lan_openvpn_home_site> to ! self port 21 divert-to 127.0.0.1 port 8021
   pass in quick on $vpn_warrior inet proto tcp from <lan_openvpn_warrior> to ! self port 21 divert-to 127.0.0.1 port 8021
   pass quick on $vpn_home from <lan_openvpn_home_site> to any tag FROM_VPN
+  pass quick on $vpn_home from 192.168.255.0/28 to any tag FROM_VPN
   pass quick on $vpn_warrior from <lan_openvpn_warrior> to any tag FROM_VPN
 
   pass in quick on $main proto tcp from any to $main:0 port ssh flags S/SA keep state (max-src-conn 6, max-src-conn-rate 6/60,overload <bruteforce> flush global) 
@@ -75,12 +79,14 @@ openvpn_instance_home:
   openvpn_use_auth_file: yes
   openvpn_server_options:
      - "route 172.31.1.20 255.255.255.255"
+     - "route 172.31.1.254  255.255.255.255"
      - "route 172.31.5.100 255.255.255.255"
   openvpn_clients_config:
    'home2vps':
      content: |
        iroute 172.31.1.20 255.255.255.255
        iroute 172.31.5.100 255.255.255.255
+       iroute 172.31.1.254  255.255.255.255
 
 openvpn_instance_warrior:
   openvpn_dev: tun1
